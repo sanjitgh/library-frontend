@@ -114,9 +114,12 @@ export default function AllBooksTable() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel className="cursor-pointer">
+                        Cancel
+                      </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDelete(book?._id)}
+                        className="cursor-pointer"
                       >
                         Delete
                       </AlertDialogAction>
