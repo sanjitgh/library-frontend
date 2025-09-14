@@ -18,13 +18,25 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm, type FieldValues, type SubmitHandler } from "react-hook-form";
-import { useCreateBookMutation } from "@/redux/api/baseApi";
+import {
+  useGetSingleBookQuery,
+  useUpdateBookMutation,
+} from "@/redux/api/baseApi";
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
+import { useEffect } from "react";
 
-export default function AddBook() {
+export default function UpdateBook() {
   const navigation = useNavigate();
+  const params = useParams();
+
+  // Fetch single book data
+  const { data, isLoading } = useGetSingleBookQuery(params?.id);
+
+  // Mutation for updating book
+  const [updateBook, { isLoading: isSubmitting }] = useUpdateBookMutation();
+
   const form = useForm({
     defaultValues: {
       title: "",
@@ -37,38 +49,49 @@ export default function AddBook() {
     },
   });
 
-  const [createBook, { isLoading }] = useCreateBookMutation();
+  //   Reset form values once data is loaded
+  useEffect(() => {
+    if (data) {
+      form.reset({
+        title: data.title,
+        author: data.author,
+        genre: data.genre,
+        isbn: data.isbn,
+        copies: data.copies,
+        available: data.available,
+        description: data.description,
+      });
+    }
+  }, [data, form]);
 
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
-    const bookData = {
-      title: data?.title,
-      author: data?.author,
-      genre: data?.genre,
-      isbn: data?.isbn,
-      description: data?.description,
-      copies: Number(data?.copies),
-      available: data?.available,
-    };
-
     try {
-      const res = await createBook(bookData).unwrap();
+      const res = await updateBook({
+        id: params?.id,
+        ...data,
+        copies: Number(data.copies),
+      }).unwrap();
 
-      if (res?.success === true) {
+      console.log("res", res, params.id);
+      if (res?.success) {
         toast.success(res.message, {
           position: "top-center",
         });
         navigation("/all-book");
       }
     } catch (error: any) {
-      toast.error(error?.data?.message, {
+      console.log(error);
+      toast.error(error?.data?.message || "Failed to update book", {
         position: "top-center",
       });
     }
   };
 
+  if (isLoading) return <p className="text-center">Loading book...</p>;
+
   return (
     <div className="py-10">
-      <h1 className="text-center text-3xl mb-5">Add Book</h1>
+      <h1 className="text-center text-3xl mb-5">Update Book</h1>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -81,11 +104,12 @@ export default function AddBook() {
               <FormItem>
                 <FormLabel>Title</FormLabel>
                 <FormControl>
-                  <Input {...field} required={true} />
+                  <Input {...field} required />
                 </FormControl>
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="author"
@@ -93,11 +117,12 @@ export default function AddBook() {
               <FormItem>
                 <FormLabel>Author</FormLabel>
                 <FormControl>
-                  <Input {...field} required={true} />
+                  <Input {...field} required />
                 </FormControl>
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="genre"
@@ -105,23 +130,25 @@ export default function AddBook() {
               <FormItem>
                 <FormLabel>Genre</FormLabel>
                 <FormControl>
-                  <Input {...field} required={true} />
+                  <Input {...field} required />
                 </FormControl>
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="isbn"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Isbn</FormLabel>
+                <FormLabel>ISBN</FormLabel>
                 <FormControl>
-                  <Input {...field} required={true} />
+                  <Input {...field} required />
                 </FormControl>
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="copies"
@@ -129,11 +156,12 @@ export default function AddBook() {
               <FormItem>
                 <FormLabel>Copies</FormLabel>
                 <FormControl>
-                  <Input {...field} required={true} type="number" />
+                  <Input {...field} required type="number" />
                 </FormControl>
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="available"
@@ -162,6 +190,7 @@ export default function AddBook() {
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="description"
@@ -169,13 +198,18 @@ export default function AddBook() {
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Textarea {...field} required={true} className="h-28" />
+                  <Textarea {...field} required className="h-28" />
                 </FormControl>
               </FormItem>
             )}
           />
+
           <Button type="submit" className="cursor-pointer w-28">
-            {isLoading ? <LoaderCircle className="animate-spin" /> : "Add Book"}
+            {isSubmitting ? (
+              <LoaderCircle className="animate-spin" />
+            ) : (
+              "Update"
+            )}
           </Button>
         </form>
       </Form>

@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <main className="max-w-5xl mx-auto px-3 min-h-[600px]">
+      <main className="max-w-5xl mx-auto px-3 min-h-[calc(100vh-120px)]">
         <Outlet />
         <Toaster offset={10} />
       </main>

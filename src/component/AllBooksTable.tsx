@@ -1,6 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteBookMutation, useGetBooksQuery } from "@/redux/api/baseApi";
 import { HandCoins, SquarePen, Trash2 } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,10 +13,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { toast } from "sonner";
+import { Link } from "react-router";
+import type { RootState } from "@/redux/store";
+import { setCurrentPage } from "@/redux/features/books/bookSlice";
 
 export default function AllBooksTable() {
-  const { data, isLoading } = useGetBooksQuery(undefined);
+  const dispatch = useDispatch();
+  const { currentPage, limit } = useSelector((state: RootState) => state.book);
+
+  const { data, isLoading } = useGetBooksQuery({
+    page: currentPage,
+    limit,
+  });
   const [deleteBook] = useDeleteBookMutation();
 
   // Handle delete
@@ -35,9 +52,20 @@ export default function AllBooksTable() {
     }
   };
 
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      dispatch(setCurrentPage(currentPage - 1));
+    }
+  };
+
+  const handleNextPage = () => {
+    dispatch(setCurrentPage(currentPage + 1));
+  };
+
   if (isLoading) return <Skeleton className="w-full h-40" />;
+
   return (
-    <div className="overflow-x-auto rounded shadow">
+    <div className="overflow-x-auto rounded">
       <table className="min-w-full border border-gray-200 text-sm">
         <thead className="bg-gray-100">
           <tr>
@@ -61,15 +89,14 @@ export default function AllBooksTable() {
               <td className="px-4 py-2 border">
                 {book.available === false ? "Unavailable" : "Available"}
               </td>
-              <td className="px-4 py-2 border flex justify-evenly items-center">
+              <td className="px-4 py-2 border flex justify-evenly items-center gap-2">
                 <button className="cursor-pointer text-green-600">
-                  <SquarePen />
-                </button>
-                <button className="cursor-pointer text-cyan-600">
-                  <HandCoins />
+                  <Link to={`/update-book/${book._id}`}>
+                    <SquarePen />
+                  </Link>
                 </button>
 
-                {/* modal */}
+                {/* Delete modal */}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <button className="cursor-pointer text-red-600">
@@ -96,11 +123,52 @@ export default function AllBooksTable() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+
+                {book.copies === 0 ? (
+                  <button className="text-gray-600">
+                    <HandCoins />
+                  </button>
+                ) : (
+                  <button className="cursor-pointer text-cyan-600">
+                    <Link to={`/borrow-book/${book._id}`}>
+                      <HandCoins />
+                    </Link>
+                  </button>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {/* Simple Pagination - works with your existing API */}
+      <div className="mt-8">
+        <Pagination className="justify-end">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={handlePreviousPage}
+                className={
+                  currentPage === 1
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+              />
+            </PaginationItem>
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={handleNextPage}
+                className={
+                  data && data.length < limit
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }
